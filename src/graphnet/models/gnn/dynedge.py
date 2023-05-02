@@ -5,6 +5,7 @@ import torch
 from torch import Tensor, LongTensor
 from torch_geometric.data import Data
 from torch_scatter import scatter_max, scatter_mean, scatter_min, scatter_sum
+import torch_geometric
 
 from graphnet.models.components.layers import DynEdgeConv
 from graphnet.utilities.config import save_model_config
@@ -34,6 +35,8 @@ class DynEdge(GNN):
         readout_layer_sizes: Optional[List[int]] = None,
         global_pooling_schemes: Optional[Union[str, List[str]]] = None,
         add_global_variables_after_pooling: bool = False,
+        use_graph_normalization: bool = False,
+        activation: str = 'LeakyReLU'
     ):
         """Construct `DynEdge`.
 
@@ -151,15 +154,35 @@ class DynEdge(GNN):
             add_global_variables_after_pooling
         )
 
+        self._use_graph_normalization = use_graph_normalization
+        if self._use_graph_normalization:
+            print ('use_graph_normalization ON')
+
         # Base class constructor
         super().__init__(nb_inputs, self._readout_layer_sizes[-1])
 
         # Remaining member variables()
-        self._activation = torch.nn.LeakyReLU()
+        if activation == 'LeakyReLU':
+            self._activation = torch.nn.LeakyReLU()
+        elif activation == 'GELU':
+            self._activation = torch.nn.GELU()
+        elif activation == 'SELU':
+            self._activation = torch.nn.SELU()
+        elif activation == 'Mish':
+            self._activation = torch.nn.Mish()
+        elif activation == 'SiLU':
+            self._activation = torch.nn.SiLU()
+
+
         self._nb_inputs = nb_inputs
         self._nb_global_variables = 5 + nb_inputs
         self._nb_neighbours = nb_neighbours
         self._features_subset = features_subset
+
+        # GraphNorm
+        self._graphnorm = torch_geometric.nn.norm.GraphNorm(
+            nb_inputs, eps=1e-5
+        )
 
         self._construct_layers()
 
@@ -185,7 +208,7 @@ class DynEdge(GNN):
 
             conv_layer = DynEdgeConv(
                 torch.nn.Sequential(*layers),
-                aggr="add",
+                aggr='add', #"add",
                 nb_neighbors=self._nb_neighbours,
                 features_subset=self._features_subset,
             )
@@ -275,6 +298,9 @@ class DynEdge(GNN):
         """Apply learnable forward pass."""
         # Convenience variables
         x, edge_index, batch = data.x, data.edge_index, data.batch
+
+        if self._use_graph_normalization:
+            x = self._graphnorm(x, batch)
 
         global_variables = self._calculate_global_variables(
             x,

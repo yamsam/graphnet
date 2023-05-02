@@ -67,11 +67,18 @@ class SQLiteDataset(Dataset):
                 combined_selections = (
                     f"{self._index_column} = {index} and {selection}"
                 )
+            if self._sample_limit:
+                result = self._conn.execute(
+                    f"SELECT {columns} FROM {table} "
+                    f"WHERE {combined_selections} ORDER BY RANDOM() LIMIT {self._sample_limit}"
+                ).fetchall()
+            else:
+                result = self._conn.execute(
+                    f"SELECT {columns} FROM {table} "
+                    f"WHERE {combined_selections} "
+                ).fetchall()
 
-            result = self._conn.execute(
-                f"SELECT {columns} FROM {table} WHERE "
-                f"{combined_selections}"
-            ).fetchall()
+
         except sqlite3.OperationalError as e:
             if "no such column" in str(e):
                 raise ColumnMissingException(str(e))

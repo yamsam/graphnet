@@ -153,6 +153,7 @@ class Model(Logger, Configurable, LightningModule, ABC):
         index_column: str = "event_no",
         gpus: Optional[Union[List[int], int]] = None,
         distribution_strategy: Optional[str] = None,
+        classification: bool =False
     ) -> pd.DataFrame:
         """Return predictions for `dataloader` as a DataFrame.
 
@@ -163,7 +164,7 @@ class Model(Logger, Configurable, LightningModule, ABC):
         if additional_attributes is None:
             additional_attributes = []
         assert isinstance(additional_attributes, list)
-
+        print ('additional_attributes', additional_attributes)
         if (
             not isinstance(dataloader.sampler, SequentialSampler)
             and additional_attributes
@@ -186,6 +187,9 @@ class Model(Logger, Configurable, LightningModule, ABC):
         predictions = (
             torch.cat(predictions_torch, dim=1).detach().cpu().numpy()
         )
+        if classification:
+            predictions = np.argmax(predictions, axis=1).reshape(-1,1)
+
         assert len(prediction_columns) == predictions.shape[1], (
             f"Number of provided column names ({len(prediction_columns)}) and "
             f"number of output columns ({predictions.shape[1]}) don't match."
@@ -205,14 +209,24 @@ class Model(Logger, Configurable, LightningModule, ABC):
                         )
                 attributes[attr].extend(attribute)
 
-        data = np.concatenate(
-            [predictions]
-            + [
-                np.asarray(values)[:, np.newaxis]
-                for values in attributes.values()
-            ],
-            axis=1,
-        )
+        if classification:
+            data = np.concatenate(
+                [predictions]
+                + [
+                    np.asarray(values).reshape(-1, 1)
+                    for values in attributes.values()
+                ],
+                axis=1,
+            )
+        else:
+            data = np.concatenate(
+                [predictions]
+                + [
+                    np.asarray(values)[:, np.newaxis]
+                    for values in attributes.values()
+                ],
+                axis=1,
+            )
 
         results = pd.DataFrame(
             data, columns=prediction_columns + additional_attributes
@@ -246,14 +260,14 @@ class Model(Logger, Configurable, LightningModule, ABC):
         self.info(f"Model state_dict saved to {path}")
 
     def load_state_dict(
-        self, path: Union[str, Dict]
+        self, path: Union[str, Dict], strict:bool=False
     ) -> "Model":  # pylint: disable=arguments-differ
         """Load model `state_dict` from `path`."""
         if isinstance(path, str):
             state_dict = torch.load(path)
         else:
             state_dict = path
-        return super().load_state_dict(state_dict)
+        return super().load_state_dict(state_dict, strict)
 
     @classmethod
     def from_config(  # type: ignore[override]

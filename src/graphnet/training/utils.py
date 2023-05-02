@@ -47,6 +47,7 @@ def make_dataloader(
     loss_weight_column: Optional[str] = None,
     index_column: str = "event_no",
     labels: Optional[Dict[str, Callable]] = None,
+    sample_limit: Optional[int] = None,
 ) -> DataLoader:
     """Construct `DataLoader` instance."""
     # Check(s)
@@ -66,6 +67,7 @@ def make_dataloader(
         loss_weight_table=loss_weight_table,
         loss_weight_column=loss_weight_column,
         index_column=index_column,
+        sample_limit=sample_limit
     )
 
     # adds custom labels to dataset

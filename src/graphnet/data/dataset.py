@@ -151,6 +151,7 @@ class Dataset(Logger, Configurable, torch.utils.data.Dataset, ABC):
         loss_weight_column: Optional[str] = None,
         loss_weight_default_value: Optional[float] = None,
         seed: Optional[int] = None,
+        sample_limit: Optional[int] = None,
     ):
         """Construct Dataset.
 
@@ -216,6 +217,7 @@ class Dataset(Logger, Configurable, torch.utils.data.Dataset, ABC):
         self._index_column = index_column
         self._truth_table = truth_table
         self._loss_weight_default_value = loss_weight_default_value
+        self._sample_limit = sample_limit
 
         if node_truth is not None:
             assert isinstance(node_truth_table, str)

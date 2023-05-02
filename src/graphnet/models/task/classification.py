@@ -8,13 +8,19 @@ from torch import Tensor
 from graphnet.models.task import Task, IdentityTask
 
 
-class MulticlassClassificationTask(IdentityTask):
+class MulticlassClassificationTask(Task):
     """General task for classifying any number of classes.
 
     Requires the same number of input features as the number of classes being
     predicted. Returns the untransformed latent features, which are interpreted
     as the logits for each class being classified.
     """
+    # Requires one feature, logit for being signal class.
+    nb_inputs = 1
+
+    def _forward(self, x: Tensor) -> Tensor:
+        return x
+
 
 
 class BinaryClassificationTask(Task):

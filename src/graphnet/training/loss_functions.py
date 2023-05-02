@@ -135,7 +135,7 @@ class CrossEntropyLoss(LossFunction):
         self._options = options
         self._nb_classes: int
         if isinstance(self._options, int):
-            assert self._options in [torch.int32, torch.int64]
+#            assert self._options in [torch.int32, torch.int64]
             assert (
                 self._options >= 2
             ), f"Minimum of two classes required. Got {self._options}."
@@ -189,11 +189,14 @@ class CrossEntropyLoss(LossFunction):
         else:
             assert False, "Shouldn't reach here."
 
-        target_one_hot: Tensor = one_hot(target_integer, self._nb_classes).to(
-            prediction.device
-        )
+#        target_one_hot: Tensor = one_hot(target_integer, self._nb_classes).to(
+#            prediction.device
+#        )
+        
+#        print('perd', prediction.shape)
+#        print ('target', target_integer.shape)
 
-        return self._loss(prediction.float(), target_one_hot.float())
+        return self._loss(prediction.float(), target_integer.squeeze().long())
 
 
 class BinaryCrossEntropyLoss(LossFunction):

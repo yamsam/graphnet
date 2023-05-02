@@ -49,3 +49,25 @@ class Direction(Label):
         ).reshape(-1, 1)
         z = torch.cos(graph[self._zenith_key]).reshape(-1, 1)
         return torch.cat((x, y, z), dim=1)
+
+
+
+class CLSLabel(Label):
+    """Class for producing particle direction/pointing label."""
+
+    def __init__(
+        self, label_key: str = "label"
+    ):
+        """Construct `Direction`."""
+        self._label_key = label_key
+
+        # Base class constructor
+        super().__init__(key="label")
+
+    def __call__(self, graph: Data) -> torch.tensor:
+        """Compute label for `graph`."""
+        x = graph[self._label_key].reshape(-1,1)
+
+        return x
+
+
